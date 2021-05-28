@@ -1,0 +1,291 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "Untitled1.ipynb",
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "Og6HPuRSTNY5",
+        "outputId": "b78c5bd6-4b9e-48b2-be22-ab6b879dca57"
+      },
+      "source": [
+        "!pip install keras-tuner"
+      ],
+      "execution_count": 32,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "Requirement already satisfied: keras-tuner in /usr/local/lib/python3.7/dist-packages (1.0.2)\n",
+            "Requirement already satisfied: tabulate in /usr/local/lib/python3.7/dist-packages (from keras-tuner) (0.8.9)\n",
+            "Requirement already satisfied: numpy in /usr/local/lib/python3.7/dist-packages (from keras-tuner) (1.19.5)\n",
+            "Requirement already satisfied: colorama in /usr/local/lib/python3.7/dist-packages (from keras-tuner) (0.4.4)\n",
+            "Requirement already satisfied: requests in /usr/local/lib/python3.7/dist-packages (from keras-tuner) (2.23.0)\n",
+            "Requirement already satisfied: future in /usr/local/lib/python3.7/dist-packages (from keras-tuner) (0.16.0)\n",
+            "Requirement already satisfied: terminaltables in /usr/local/lib/python3.7/dist-packages (from keras-tuner) (3.1.0)\n",
+            "Requirement already satisfied: scikit-learn in /usr/local/lib/python3.7/dist-packages (from keras-tuner) (0.22.2.post1)\n",
+            "Requirement already satisfied: scipy in /usr/local/lib/python3.7/dist-packages (from keras-tuner) (1.4.1)\n",
+            "Requirement already satisfied: packaging in /usr/local/lib/python3.7/dist-packages (from keras-tuner) (20.9)\n",
+            "Requirement already satisfied: tqdm in /usr/local/lib/python3.7/dist-packages (from keras-tuner) (4.41.1)\n",
+            "Requirement already satisfied: urllib3!=1.25.0,!=1.25.1,<1.26,>=1.21.1 in /usr/local/lib/python3.7/dist-packages (from requests->keras-tuner) (1.24.3)\n",
+            "Requirement already satisfied: certifi>=2017.4.17 in /usr/local/lib/python3.7/dist-packages (from requests->keras-tuner) (2020.12.5)\n",
+            "Requirement already satisfied: idna<3,>=2.5 in /usr/local/lib/python3.7/dist-packages (from requests->keras-tuner) (2.10)\n",
+            "Requirement already satisfied: chardet<4,>=3.0.2 in /usr/local/lib/python3.7/dist-packages (from requests->keras-tuner) (3.0.4)\n",
+            "Requirement already satisfied: joblib>=0.11 in /usr/local/lib/python3.7/dist-packages (from scikit-learn->keras-tuner) (1.0.1)\n",
+            "Requirement already satisfied: pyparsing>=2.0.2 in /usr/local/lib/python3.7/dist-packages (from packaging->keras-tuner) (2.4.7)\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "WGYgbLhNTek2"
+      },
+      "source": [
+        "import tensorflow as tf\n",
+        "from tensorflow import keras\n",
+        "import numpy as np"
+      ],
+      "execution_count": 24,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "NaCeOCClTv_F"
+      },
+      "source": [
+        "fashion_mnist=keras.datasets.fashion_mnist"
+      ],
+      "execution_count": 25,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "r-BP6abCT41Y"
+      },
+      "source": [
+        "(train_images,train_labels),(test_images,test_labels)=fashion_mnist.load_data()"
+      ],
+      "execution_count": 26,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "Z7rbHweeUhKd"
+      },
+      "source": [
+        "train_images=train_images/255.0\n",
+        "test_images=test_images/255.0"
+      ],
+      "execution_count": 27,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "sBZzNldeU0u5",
+        "outputId": "e4a1526d-e27a-43cc-d743-96667146344f"
+      },
+      "source": [
+        "train_images[0].shape"
+      ],
+      "execution_count": 28,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "(28, 28)"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 28
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "YEq-dGcXU8KA"
+      },
+      "source": [
+        "train_images = train_images.reshape(len(train_images),28,28,1)\n",
+        "test_images = test_images.reshape(len(test_images),28,28,1)"
+      ],
+      "execution_count": 29,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "mj9xhC4mVY8n"
+      },
+      "source": [
+        "def build_mode1(hp):\n",
+        "  model = keras.Sequential([\n",
+        "    keras.layers.Conv2D(\n",
+        "        filters=hp.Int('conv_1_filter', min_value=32, max_value=128, step=16), \n",
+        "        kernel_size=hp.Choice('conv_1_kernel', values = [3,5]), \n",
+        "        activation='relu',\n",
+        "        input_shape=(28,28,1)\n",
+        "    ),\n",
+        "\n",
+        "    keras.layers.Conv2D(\n",
+        "        filters=hp.Int('conv_2_filter', min_value=32, max_value=64, step=16), \n",
+        "        kernel_size=hp.Choice('conv_2_kernel', values = [3,5]), \n",
+        "        activation='relu'\n",
+        "    ),\n",
+        "    keras.layers.Flatten(),\n",
+        "    keras.layers.Dense(\n",
+        "        units=hp.Int('dense_1_units', min_value=32, max_value=128, step=16),\n",
+        "        activation='relu'\n",
+        "    ),\n",
+        "    keras.layers.Dense(10, activation='softmax')#output layer\n",
+        "  ])\n",
+        "\n",
+        "  mode1.compile(optimizer=keras.optimizers.Adam(hp.Choice('learning_rate', values=[1e-2, 1e-3])),\n",
+        "                loss='sparse_categorical_crossentropy',\n",
+        "                metrices=['accuracy'])\n",
+        "  \n",
+        "  return model"
+      ],
+      "execution_count": 30,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "16jb5q0IXFiu"
+      },
+      "source": [
+        "from kerastuner import RandomSearch\n",
+        "from kerastuner.engine.hyperparameters import HyperParameters"
+      ],
+      "execution_count": 18,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 212
+        },
+        "id": "BLFnZRNcZrym",
+        "outputId": "db48e43b-4352-42f5-9482-c0428cc7d615"
+      },
+      "source": [
+        "tuner_search=RandomSearch(build_model,\n",
+        "                          objective='val_accuracy',\n",
+        "                          max_trials=5,directory='output',project_name=\"Mnist Fashion\")"
+      ],
+      "execution_count": 20,
+      "outputs": [
+        {
+          "output_type": "error",
+          "ename": "NameError",
+          "evalue": "ignored",
+          "traceback": [
+            "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+            "\u001b[0;31mNameError\u001b[0m                                 Traceback (most recent call last)",
+            "\u001b[0;32m<ipython-input-20-2c7963d02a6f>\u001b[0m in \u001b[0;36m<module>\u001b[0;34m()\u001b[0m\n\u001b[0;32m----> 1\u001b[0;31m tuner_search=RandomSearch(build_model,\n\u001b[0m\u001b[1;32m      2\u001b[0m                           \u001b[0mobjective\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;34m'val_accuracy'\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      3\u001b[0m                           max_trials=5,directory='output',project_name=\"Mnist Fashion\")\n",
+            "\u001b[0;31mNameError\u001b[0m: name 'build_model' is not defined"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 178
+        },
+        "id": "U3B9YlsdbBC0",
+        "outputId": "c1c29be4-3104-42fd-fb5b-da29046a8ff4"
+      },
+      "source": [
+        "tuner_search.search(train_images,train_labels,epochs=3,validation_split=0.1)"
+      ],
+      "execution_count": 21,
+      "outputs": [
+        {
+          "output_type": "error",
+          "ename": "NameError",
+          "evalue": "ignored",
+          "traceback": [
+            "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+            "\u001b[0;31mNameError\u001b[0m                                 Traceback (most recent call last)",
+            "\u001b[0;32m<ipython-input-21-14d18f8bc01c>\u001b[0m in \u001b[0;36m<module>\u001b[0;34m()\u001b[0m\n\u001b[0;32m----> 1\u001b[0;31m \u001b[0mtuner_search\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0msearch\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mtrain_images\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0mtrain_labels\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0mepochs\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;36m3\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0mvalidation_split\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;36m0.1\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m",
+            "\u001b[0;31mNameError\u001b[0m: name 'tuner_search' is not defined"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 162
+        },
+        "id": "dQ6UfSC2b5ih",
+        "outputId": "d2ae17dd-379c-4602-8b12-764e807932c4"
+      },
+      "source": [
+        "model=tuner_search.get_best_models(num_models=1)[0]"
+      ],
+      "execution_count": 22,
+      "outputs": [
+        {
+          "output_type": "error",
+          "ename": "NameError",
+          "evalue": "ignored",
+          "traceback": [
+            "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+            "\u001b[0;31mNameError\u001b[0m                                 Traceback (most recent call last)",
+            "\u001b[0;32m<ipython-input-22-fb296ec7c5f9>\u001b[0m in \u001b[0;36m<module>\u001b[0;34m()\u001b[0m\n\u001b[0;32m----> 1\u001b[0;31m \u001b[0mmodel\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mtuner_search\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mget_best_models\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mnum_models\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;36m1\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0;36m0\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m",
+            "\u001b[0;31mNameError\u001b[0m: name 'tuner_search' is not defined"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "q-t7ZRwVdOLv"
+      },
+      "source": [
+        "model.summary()"
+      ],
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
